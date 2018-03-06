@@ -1,0 +1,58 @@
+<?php
+//Configuration file
+
+//Description: Specify common variable
+
+// Created By : Satish Kumar(satish.prg@gmail.com)
+
+//Date: Jan 6, 2009
+
+
+// Pull in the NuSOAP code
+
+require_once('nusoap-0.7.3/lib/nusoap.php');
+
+// Provide MANTIS WSDL URL
+
+//define('WSDL_URL','http://localhost/mantis/dashboard/api/soap/mantisconnect.php?wsdl');
+
+define('WSDL_URL','http://localhost/mantis/mantisbt116/api/soap/mantisconnect.php?wsdl');
+
+
+
+//Mantis connecters details
+
+define('MANTIS_USERNAME','administrator');
+
+define('MANTIS_PASSWORD','root');
+
+
+
+//Database connection settings
+
+define('hostname','localhost');
+
+define('dbname','bugtracker');
+define('username','root');
+
+define('password','123456');
+
+
+
+//Define custom field mapping
+
+//For mantis_custom_field_string_table /mantis_bug_table
+
+//Mantis_custom_field_table
+
+define('startdate','1');
+
+define('finishdate','2');
+
+define('workinghours','3');
+
+define('percentcomplete','4');
+
+define('scheduling','5');
+
+?>

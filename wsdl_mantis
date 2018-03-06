@@ -1,0 +1,422 @@
+<?php
+
+//Class : wsdl_mantis
+
+//Description: Add issue , add relationship using Mantis WSDL API
+
+// Created By : Satish Kumar
+
+//Date: Jan 5, 2009
+
+
+
+class wsdl_mantis
+
+{
+
+public $client;
+
+// Constructor
+
+	public function __construct()
+
+	{
+
+		
+
+		try{
+
+				// Create the client soap nstance
+
+				$this->client = new soapclient(WSDL_URL);
+
+			}
+
+			catch(Soapfault $e)
+
+			{
+
+			echo "Invalid WSDL Soap URL";
+
+			exit;
+
+			}		
+
+			//Create a database connection	
+
+			mysql_connect(hostname, username, password) or die(mysql_error());
+
+			mysql_select_db(dbname);
+
+
+
+				
+
+	}
+
+	// Addnotes function
+
+	//parameter @projectid
+
+	public function add_issue_note($issue_id,$reporter_id,$notes)
+
+	{
+
+
+
+				$view_state = new StdClass;
+
+				$view_state->id =1;
+
+			
+
+				$note = new StdClass;
+
+				$note->id =$issue_id;
+
+				
+
+				$note->reporter =$reporter_id;
+
+				$note->text =$notes;	
+
+				$note->view_state=$view_state;	
+
+				$note->date_submitted =date('d-m-Y');	
+
+				$note->last_modified =date('d-m-Y');		
+
+			
+
+			
+
+			try{	
+
+				$this->client->mc_issue_note_add(MANTIS_USERNAME,MANTIS_PASSWORD,$issue_id,$note);
+
+				} catch (SoapFault $exception) {
+
+			  // handle the fault
+
+			 print_r($exception);  
+
+			 //var_dump(libxml_get_last_error());
+
+			 echo "Problem occured when adding issue for the planner title: ".$summary."<br>";
+
+			} 
+
+			
+
+	}
+
+	// Add issue function
+
+	//parameter @projectid
+
+	public function addissue($projectid,$reporterid,$handlerid,$summary,$description,$priority,$eta)
+
+	{
+
+				//$client = new soapclient(WSDL_URL);
+
+				$issue = new StdClass;
+
+				
+
+				$project = new StdClass;
+
+				$project->id =$projectid;// 15;
+
+				
+
+				$reporter = new StdClass;
+
+				$reporter->id =$reporterid;// 24;
+
+				
+
+				$handler = new StdClass;
+
+				if(trim($handlerid)=="" or trim($handlerid)=="0" )
+
+				$handler->id =$reporterid;// 24;
+
+				else
+
+				$handler->id =$handlerid;// 24;
+
+			
+
+			//	echo "HAND: ".$handler->id."<br><br>";
+
+				
+
+				$issue->project = $project;
+
+				$issue->reporter = $reporter;
+
+
+
+				$issue->handler = $handler;
+
+				
+
+				$issue->summary = $summary;//"testiing subject";
+
+				$issue->description =$description;//"testiing";
+
+				
+
+				if($priority=="" or $priority=="0" )
+
+				$issue->priority = 30;
+
+				else
+
+				$issue->priority = $prority;
+
+
+
+				if($eta=="" or $eta=="0" )
+
+				$issue->eta = 10;
+
+				else
+
+				$issue->eta  = $eta;
+
+				
+
+				$issue->severity = 50;
+
+				$issue->status = 10;
+
+				$issue->reproducibility = 10;
+
+				$issue->resolution = 10;
+
+				$issue->projection = 10;
+
+				
+
+				$issue->view_state = 10;
+
+				$issue->category = "Task";
+
+				$issue->additional_information =date('d-m-Y: H:i:s');
+
+				
+
+			try { 
+
+				$response_issue_id=$this->client->mc_issue_add(MANTIS_USERNAME,MANTIS_PASSWORD,$issue); // add Task
+
+			return $response_issue_id;
+
+				} catch (SoapFault $exception) {
+
+			  // handle the fault
+
+			 print_r($exception);  
+
+			 //var_dump(libxml_get_last_error());
+
+			 echo "Problem occured when adding issue for the planner title: ".$summary."<br>";
+
+			} 
+
+
+
+	}
+
+	
+
+//Function accpets username as argument and returns userid if exists
+
+	public function checkUserid($username)
+
+	{
+
+	$result = mysql_query("SELECT * FROM mantis_user_table where username='".$username."'") or die(mysql_error());  
+
+	$row = mysql_fetch_array( $result );
+
+	// Print out the contents of the entry 
+
+	if(sizeof($row>0))
+
+	return $row['id'];
+
+	else
+
+	return 0;
+
+
+
+
+
+	}
+
+
+
+//insert custom fields startdate,finsihdate,percentage complete
+
+	public function mantis_insert_customfield($field_id,$bug_id,$value)
+
+	{
+
+	$sql="insert into mantis_custom_field_string_table (field_id,bug_id,value) values ('".$field_id."','".$bug_id."','".$value."')";
+
+	mysql_query($sql);
+
+	}
+
+
+
+//update ETA field 
+
+	public function mantis_update_bugfield($bug_id,$bugfield,$bugvalue)
+
+	{
+
+	$sql="update mantis_bug_table set ".$bugfield."='".$bugvalue."' where id=".$bug_id;
+
+	//echo $sql;
+
+	mysql_query($sql);
+
+	}
+
+	
+
+//Check if project id exists in Manits	
+
+	public function checkProjectid($projectid)
+
+	{
+
+
+
+		try{
+
+			$resfound=$this->client->mc_project_get_categories(MANTIS_USERNAME,MANTIS_PASSWORD, $projectid );
+
+			}
+
+			catch(Exception $e)
+
+			{
+
+			echo "<br>Invalid Login credentials (wsdl_config.php) or ProjectID .<br>";
+
+			return 0;
+
+			}
+
+	//	print_r($resfound);
+
+		return 1;
+
+	
+
+	}
+
+	
+
+	public function addirelationship($relationType,$issue_id,$target_id)
+
+	{
+
+			
+
+			//relation object class---------------START
+
+			$relation = new StdClass;
+
+		
+
+			if($relationType=="p")
+
+			{
+
+			//parent of
+
+				$relation->id = 2;
+
+				$relation->name = "parent of";	
+
+			}
+
+			else
+
+			{
+
+			//child of
+
+				$relation->id = 3;
+
+				$relation->name = "child of";	
+
+			}
+
+		
+
+			
+
+			//relation object class---------------END
+
+			
+
+			//relationship object class-----------------------START
+
+			$relationship = new StdClass;
+
+			$relationship->id= 3;
+
+			$relationship->type=$relation;
+
+			$relationship->target_id= $target_id;
+
+			//relationship object class-----------------------END
+
+		
+
+		
+
+				//$response_issue_id=56;
+
+			 try{
+
+				$response=$this->client->mc_issue_relationship_add(MANTIS_USERNAME,MANTIS_PASSWORD,$issue_id,$relationship); // add relationshiip
+
+				} catch (SoapFault $exception) {  
+
+			   //print_r($exception);
+
+			  // handle the fault
+
+			  //echo "Problem occured when configuring relationship for the Ticket id: ".$issue_id."<br>";
+
+			}
+
+	}
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+?>
+
